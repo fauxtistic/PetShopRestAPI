@@ -14,10 +14,14 @@ namespace PetShop.Core.ApplicationService.Impl
     public class PetService : IPetService
     {
         private IPetRepository _petRepository;
+        private IOwnerRepository _ownerRepository;
+        private IPetTypeRepository _petTypeRepository;
 
-        public PetService(IPetRepository petRepository)
+        public PetService(IPetRepository petRepository, IOwnerRepository ownerRepository, IPetTypeRepository petTypeRepository)
         {
             _petRepository = petRepository;
+            _ownerRepository = ownerRepository;
+            _petTypeRepository = petTypeRepository;
         }
 
         //Validates new pet objects
@@ -29,9 +33,43 @@ namespace PetShop.Core.ApplicationService.Impl
             {
                 if (petToValidate.PetId < 1)
                 {
-                    errorMessage += "ID must be a positive integer greater than zero\n";
+                    errorMessage += "Pet ID must be a positive integer greater than zero\n";
                 }               
             }
+
+            if (petToValidate.PreviousOwner == null || petToValidate.PreviousOwner.OwnerId < 1)
+            {
+                errorMessage += "Pet must have a previous owner and owner ID must be a positive integer greater than zero\n";
+            }
+            else
+            {
+                var foundOwner = _ownerRepository.ReadOwnerById(petToValidate.PreviousOwner.OwnerId);
+                if (foundOwner == null)
+                {
+                    errorMessage += "No owner found with owner ID. Previous owner must be an existing owner\n";
+                }
+                else
+                {
+                    petToValidate.PreviousOwner = foundOwner;
+                }
+            }
+            
+            if (petToValidate.Type == null || petToValidate.Type.PetTypeId < 1)
+            {
+                errorMessage += "Pet must have a type and pet type ID must be a positive integer greater than zero\n";
+            }
+            else
+            {
+                var foundPetType = _petTypeRepository.ReadPetTypeById(petToValidate.Type.PetTypeId);
+                if (foundPetType == null)
+                {
+                    errorMessage += "No pet type found with pet type ID. Type must be an existing pet type\n";
+                }
+                else
+                {
+                    petToValidate.Type = foundPetType;
+                }
+            }            
 
             if (string.IsNullOrEmpty(petToValidate.Name) || petToValidate.Name.Length < 2)
             {
